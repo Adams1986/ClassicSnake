@@ -49,7 +49,6 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
         if (isInMenu){
             //draw menu
             drawMenu(g);
-            System.out.println(isAtEndGame+""+hasWon);
         }
         else if (isAtEndGame){
 
@@ -92,9 +91,10 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
         }
         else{
 
-            if(highScoreInt != -1){
+            if(highScoreInt < score){
                 endGameGraphics.drawString(
-                        "Congratulations " + highscore.split(":")[0] + " on setting a new high score!", getPreferredSize().width / 2, getPreferredSize().height / 2);
+                        "Congratulations " + highscore.split(":")[0] + " on setting a new high score!",
+                        getPreferredSize().width / 2, getPreferredSize().height / 2);
             }
             endGameGraphics.drawString(
                     "You lost. Try again", getPreferredSize().width/2, getPreferredSize().height/2 + 30);
@@ -399,7 +399,6 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
 
 
             File scoreFile = new File("highscore.dat");
-            System.out.println(scoreFile.getAbsolutePath());
 
             if (!scoreFile.exists()){
                 try {
