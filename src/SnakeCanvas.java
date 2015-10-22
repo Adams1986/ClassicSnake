@@ -21,20 +21,22 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
 
     //god-object. Runs methods in background
     private Thread runThread;
-    private Graphics graphics;
     private int score = 0;
+
 
     public void paint(Graphics g){
 
         setPreferredSize(new Dimension(640, 480));
-        snake = new LinkedList<Point>();
-        generateDefaultSnake();
-        placeFruit();
-
-        //copy of paint graphics
-        graphics = g.create();
-
         addKeyListener(this);
+
+        //only resetting snake when exists. Update method calls paint method so important that new List not generated
+        //all the time -- snake reset alot
+        if (snake == null) {
+            snake = new LinkedList<Point>();
+
+            generateDefaultSnake();
+            placeFruit();
+        }
 
         if (runThread == null){
 
@@ -42,6 +44,35 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
             runThread = new Thread(this);
             runThread.start();
         }
+
+        drawFruit(g);
+        drawBoard(g);
+        drawSnake(g);
+        drawScore(g);
+    }
+
+    //contains the double buffering
+    public void update(Graphics g) {
+
+        Graphics offscreenGraphics;
+        BufferedImage offscreen = null;
+        Dimension d = getSize();
+
+        //type of image allows rgb color system and alpha transparency. So transparent images also possible
+        offscreen = new BufferedImage(d.width, d.height, BufferedImage.TYPE_INT_ARGB);
+        offscreenGraphics = offscreen.getGraphics();
+
+        //color naturally painted in background. White as default
+        offscreenGraphics.setColor(getBackground());
+        offscreenGraphics.fillRect(0, 0, d.width, d.height);
+
+        //Board. Default black
+        offscreenGraphics.setColor(getForeground());
+
+        paint(offscreenGraphics);
+
+        //flip cancas to onscreen. Imageobserver specified as this
+        g.drawImage(offscreen, 0, 0, this);
     }
 
     private void generateDefaultSnake(){
@@ -62,7 +93,9 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
 
             //game continues loop to keep running logic
             move();
-            draw(graphics);
+
+            //calls update and paint method
+            repaint();
 
             try {
                 //access to current thread from run-method
@@ -172,29 +205,6 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
 
         //add head at first position. Push it into first position. Rest follows. Linkedlist ftw
         snake.push(newPoint);
-    }
-
-    public void draw(Graphics g){
-
-        //plus 30 in end to make sure string score is also cleared. And plus 10 to allow right side board to draw line
-        g.clearRect(0, 0, FIELD_WIDTH * BOARD_WIDTH + 10, FIELD_HEIGHT * BOARD_HEIGHT + 30);
-
-        //doubleBuffering?! create a image and then setting canvas to this image?!
-        BufferedImage buffer = new BufferedImage(
-                FIELD_WIDTH * BOARD_WIDTH + 10, FIELD_HEIGHT * BOARD_HEIGHT + 30, BufferedImage.TYPE_INT_ARGB);
-
-        //draw graphics directly to image. PaintBrush
-        Graphics bufferGraphics = buffer.getGraphics();
-
-        //Using paint brush to paint
-
-        drawFruit(bufferGraphics);
-        drawBoard(bufferGraphics);
-        drawSnake(bufferGraphics);
-        drawScore(bufferGraphics);
-
-        //flip. Take what is on our screen and draw image on to it
-        g.drawImage(buffer, 0, 0, FIELD_WIDTH * BOARD_WIDTH + 10, FIELD_HEIGHT * BOARD_HEIGHT + 30, this);
     }
 
     public void drawBoard(Graphics g){
