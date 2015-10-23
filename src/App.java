@@ -6,12 +6,12 @@ import java.awt.*;
  */
 public class App extends JFrame{
 
-    SnakeCanvas canvas;
+    ModifiedSnakeCanvas canvas;
 
     public App(){
 
         JPanel panel = new JPanel();
-        canvas = new SnakeCanvas();
+        canvas = new ModifiedSnakeCanvas();
         canvas.setPreferredSize(new Dimension(640, 480));
         canvas.setVisible(true);
         canvas.setFocusable(true);
@@ -24,6 +24,7 @@ public class App extends JFrame{
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
+    //TODO:Points is equal to length of snake
     public static void main(String[] args) {
 
         new App();

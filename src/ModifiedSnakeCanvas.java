@@ -6,20 +6,20 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
 import java.util.LinkedList;
-import java.util.Random;
 
 /**
  * Created by ADI on 21-10-2015.
  */
-public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
+public class ModifiedSnakeCanvas extends Canvas implements Runnable, KeyListener {
 
-    private static final int FIELD_HEIGHT = 15;
-    private static final int FIELD_WIDTH = 15;
-    private static final int BOARD_HEIGHT = 25;
-    private static final int BOARD_WIDTH = 25;
+    private static final int FIELD_HEIGHT = 20;
+    private static final int FIELD_WIDTH = 20;
+    private static final int BOARD_HEIGHT = 15;
+    private static final int BOARD_WIDTH = 15;
 
     private LinkedList <Point> snake;
-    private Point fruit;
+
+
     private int direction = Direction.NO_DIRECTION;
 
     //god-object. Runs methods in background
@@ -58,6 +58,9 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
             drawEndGame(g);
             hasWon = false;
             isAtEndGame = true;
+
+            //TODO: solved? save moves to file
+            moves = sb.toString();
         }
         else {
 
@@ -65,14 +68,13 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
                 snake = new LinkedList<Point>();
 
                 generateDefaultSnake();
-                placeFruit();
             }
 
             if (highscore.equals("")){
 
                 highscore = getHighScore();
             }
-            drawFruit(g);
+
             drawBoard(g);
             drawSnake(g);
             drawScore(g);
@@ -152,9 +154,7 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
         score = 0;
         snake.clear();
 
-        snake.add(new Point(0, 2));
-        snake.add(new Point(0, 1));
-        snake.add(new Point(0,0));
+        snake.add(new Point(BOARD_HEIGHT/2, BOARD_WIDTH/2));
         direction = Direction.NO_DIRECTION;
     }
 
@@ -190,75 +190,68 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
         Point head = snake.peekFirst();
         Point newPoint = head;
 
-        //add Point to front of snake and remove from back in linked list
 
-        //Direction of snake object
-        //TODO: Clean up double switch statements
+        score += 1;
+
+        Point addPoint = (Point) newPoint.clone();
+
+        /*moves = "dwdwdwdwd";
+
+        char[] arrayOfMoves = moves.toCharArray();
+
+        for (int i = 0; i < arrayOfMoves.length; i++) {
+            switch (arrayOfMoves[i]){
+
+                case 'w':
+                    //
+                    newPoint = new Point(head.x, head.y -1);
+                    sb.append("w");
+                    break;
+
+                case 's':
+                    newPoint = new Point(head.x, head.y +1);
+                    sb.append("s");
+                    break;
+
+                case 'a':
+                    newPoint = new Point(head.x -1, head.y);
+                    sb.append("a");
+                    break;
+
+                case 'd':
+                    newPoint = new Point(head.x +1, head.y);
+                    sb.append("d");
+                    break;
+            }
+        }*/
         switch (direction){
 
             case Direction.UP:
                 //
-                newPoint = new Point(head.x, head.y - 1);
+                newPoint = new Point(head.x, head.y -1);
+                sb.append("w");
                 break;
 
             case Direction.DOWN:
-                newPoint = new Point(head.x, head.y + 1);
+                newPoint = new Point(head.x, head.y +1);
+                sb.append("s");
                 break;
 
             case Direction.LEFT:
-                newPoint = new Point(head.x - 1, head.y);
+                newPoint = new Point(head.x -1, head.y);
+                sb.append("a");
                 break;
 
             case Direction.RIGHT:
-                newPoint = new Point(head.x + 1, head.y);
+                newPoint = new Point(head.x +1, head.y);
+                sb.append("d");
                 break;
         }
 
-        //removing last part of snake before adding below.
-        //TODO: Maybe not remove for client/server project
-        if (direction!=Direction.NO_DIRECTION)
-            snake.remove(snake.peekLast());
+        //'Popping' in a new head. Again maybe change to the endPoint somehow
+        snake.push(addPoint);
 
-        if (newPoint.equals(fruit)){
-
-            score += 100;
-            //TODO:
-            //snake hits fruit. Add to list
-
-            //add to end but which direction to add to?
-            /*Point endPoint = snake.peekLast();
-            snake.addLast(new Point());*/
-
-            Point addPoint = (Point) newPoint.clone();
-
-            switch (direction){
-
-                case Direction.UP:
-                    //
-                    newPoint = new Point(head.x, head.y -1);
-                    break;
-
-                case Direction.DOWN:
-                    newPoint = new Point(head.x, head.y +1);
-                    break;
-
-                case Direction.LEFT:
-                    newPoint = new Point(head.x -1, head.y);
-                    break;
-
-                case Direction.RIGHT:
-                    newPoint = new Point(head.x +1, head.y);
-                    break;
-            }
-
-            //'Popping' in a new head. Again maybe change to the endPoint somehow
-            snake.push(addPoint);
-            placeFruit();
-
-
-
-        }
-        else if (newPoint.x < 0 || newPoint.x > BOARD_WIDTH - 1){
+        if (newPoint.x < 0 || newPoint.x > BOARD_WIDTH - 1){
 
             //OOB
             checkScore();
@@ -324,38 +317,12 @@ public class SnakeCanvas extends Canvas implements Runnable, KeyListener {
         g.setColor(Color.BLACK);
     }
 
-
-    private void drawFruit(Graphics g) {
-
-        g.setColor(Color.CYAN);
-        g.fillOval(fruit.x * FIELD_WIDTH, fruit.y * FIELD_HEIGHT, FIELD_WIDTH, FIELD_HEIGHT);
-        g.setColor(Color.BLACK);
-    }
-
     private void drawScore(Graphics g){
 
         g.setColor(Color.LIGHT_GRAY);
         g.drawString("Score: " + score, 0, FIELD_HEIGHT * BOARD_HEIGHT + 20);
         g.drawString("Highscore: " + highscore, 0, FIELD_HEIGHT * BOARD_HEIGHT + 35);
         g.setColor(Color.BLACK);
-    }
-
-    private void placeFruit(){
-
-        Random random = new Random();
-        int randomX = random.nextInt(BOARD_WIDTH);
-        int randomY = random.nextInt(BOARD_HEIGHT);
-
-        Point randomPoint = new Point(randomX, randomY);
-
-        while (snake.contains(randomPoint)){
-
-            randomX = random.nextInt(BOARD_WIDTH);
-            randomY = random.nextInt(BOARD_HEIGHT);
-
-            randomPoint = new Point(randomX, randomY);
-        }
-        fruit = randomPoint;
     }
 
     private String getHighScore(){
