@@ -31,8 +31,9 @@ public class ReplayApplet extends Applet {
 
     }
 
-    public void paint(Graphics g){
 
-        setSize(new Dimension(640, 480));
-    }
+//    public void paint(Graphics g){
+//
+//        setSize(new Dimension(640, 480));
+//    }
 }
