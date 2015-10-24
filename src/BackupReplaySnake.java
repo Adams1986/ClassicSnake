@@ -1,70 +1,210 @@
+import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.util.LinkedList;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
- * Created by simonadams on 23/10/15.
+ * Class contains the logic for drawing one or two snakes to the canvas from a finished game
  */
-public class BackupReplaySnake extends Canvas implements Runnable{
+public class BackupReplaySnake extends JPanel implements ActionListener {
 
     private static final int FIELD_HEIGHT = 20;
     private static final int FIELD_WIDTH = 20;
     private static final int BOARD_HEIGHT = 15;
     private static final int BOARD_WIDTH = 15;
 
-    private String moves;
-    private LinkedList<Point>snake = new LinkedList<>();
-    private StringBuilder sb = new StringBuilder();
+    private Snake userSnake;
+    private Snake opponentSnake;
 
-    private Thread runThread;
+    //Timer instead of Thread.sleep. Important in a JPanel
+    private Timer tm = new Timer(500, this);
+    private int counter = 0;
+    ;
+
+    /**
+     * Constructor for completed game.
+     * Two snake objects, for a completed game with two moving snakes.
+     * @param userSnake
+     * @param opponentSnake
+     */
+    public BackupReplaySnake(Snake userSnake, Snake opponentSnake){
+
+        this.userSnake = userSnake;
+        this.opponentSnake = opponentSnake;
+
+    }
+
+    /**
+     * Constructor for a single users game, so he can watch his own movement.
+     * @param userSnake
+     */
+    public BackupReplaySnake(Snake userSnake){
+
+        this.userSnake = userSnake;
+    }
 
     @Override
-    public void paint(Graphics g) {
-
-        snake.add(new Point(0, 0));
+    protected void paintComponent(Graphics g) {
+        //super.paintComponent(g);
 
         System.out.println("in paint method");
-        if (runThread == null){
-
-            setPreferredSize(new Dimension(640, 480));
-            //this thread
-            runThread = new Thread(this);
-            runThread.start();
-        }
 
         drawBoard(g);
-        drawSnake(g);
 
+        tm.start();
+        if (counter == 1){
+
+            drawInstantReplayMessage(g);
+        }
+
+        drawSnake(g, userSnake);
+
+        if (opponentSnake != null){
+            drawSnake(g, opponentSnake);
+        }
+
+        counter = 1;
+    }
+    /**
+     *The paint method. Contains the method-calls that do the painting to the canvas
+     * @param g
+     */
+        /*@Override
+        public void paint(Graphics g) {
+
+            System.out.println("in paint method");
+
+            drawBoard(g);
+
+            if (counter == 1){
+
+                drawInstantReplayMessage(g);
+            }
+
+            drawSnake(g, userSnake);
+
+            if (opponentSnake != null){
+                drawSnake(g, opponentSnake);
+            }
+
+            counter = 1;
+        }
+    */
+    /**
+     * For flipping graphics. Better for performance?
+     * @param g
+     */
+        /*@Override
+        public void update(Graphics g) {
+
+            super.update(g);
+
+            System.out.println("in update method");
+            Graphics offscreenGraphics;
+            BufferedImage offscreen = null;
+            Dimension d = getSize();
+
+            //type of image allows rgb color system and alpha transparency. So transparent images also possible
+            offscreen = new BufferedImage(d.width, d.height, BufferedImage.TYPE_INT_ARGB);
+            offscreenGraphics = offscreen.getGraphics();
+
+            //color naturally painted in background. White as default
+            offscreenGraphics.setColor(getBackground());
+            offscreenGraphics.fillRect(0, 0, d.width, d.height);
+
+            //Board. Default black
+            offscreenGraphics.setColor(getForeground());
+
+            paint(offscreenGraphics);
+
+            //flip canvas to onscreen. Image observer specified as this
+            g.drawImage(offscreen, 0, 0, this);
+
+            offscreenGraphics.dispose();
+        }*/
+
+    /**
+     * Draws a string to the canvas letting user know this is an instant replay
+     * @param g
+     */
+    private void drawInstantReplayMessage(Graphics g) {
+
+        g.setColor(Color.BLACK);
+
+        //TODO: is it a slow-mo?
+        g.drawString("Instant replay!", BOARD_WIDTH, FIELD_HEIGHT * BOARD_HEIGHT + 30);
     }
 
-    @Override
-    public void update(Graphics g) {
+    /**
+     * Draws the snake objects linked list to the canvas. Uses the move method to populate the list.
+     * @param g takes a graphics object as parameter
+     * @param snake takes a snake object as a parameter (see snake class for more info)
+     */
+    private void drawSnake(Graphics g, Snake snake) {
 
-        Graphics offscreenGraphics;
-        BufferedImage offscreen = null;
-        Dimension d = getSize();
 
-        //type of image allows rgb color system and alpha transparency. So transparent images also possible
-        offscreen = new BufferedImage(d.width, d.height, BufferedImage.TYPE_INT_ARGB);
-        offscreenGraphics = offscreen.getGraphics();
+        g.setColor(snake.getColor());
 
-        //color naturally painted in background. White as default
-        offscreenGraphics.setColor(getBackground());
-        offscreenGraphics.fillRect(0, 0, d.width, d.height);
+        g.fillRect(snake.getMoves().peekFirst().x * FIELD_WIDTH,
+                snake.getMoves().peekFirst().y * FIELD_HEIGHT, FIELD_WIDTH, FIELD_HEIGHT);
 
-        //Board. Default black
-        offscreenGraphics.setColor(getForeground());
+        //Pauses thread so the snakes dont instantly start moving.
+        //        try{
+        //            Thread.sleep(1200);
+        //        } catch (InterruptedException e) {
+        //            e.printStackTrace();
+        //        }
 
-        paint(offscreenGraphics);
+        //populates snake by taking the string controls and checking whether up, down, left or right (w,s,a,d).
+        for (int i = 0; i < snake.getControls().length(); i++) {
+            move(snake.getControls().charAt(i), snake);
 
-        //flip cancas to onscreen. Imageobserver specified as this
-        g.drawImage(offscreen, 0, 0, this);
+            try {
+
+                    /*basically creates the 'instant' replay. First time paint() runs, snake moves faster than other
+                     *the next times
+                     */
+                if (counter == 1) {
+                    //TODO: Use timer to sleep
+                }
+                //                else
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            //draw points in snake to canvas
+            for (Point p : snake.getMoves()) {
+
+                g.fillRect(p.x * FIELD_WIDTH, p.y * FIELD_HEIGHT, FIELD_WIDTH, FIELD_HEIGHT);
+            }
+        }
+        //lets user see fully drawn canvas for some time.
+        //        try {
+        //            //TODO: timer instead
+        //            Thread.sleep(1000);
+        //        } catch (InterruptedException e) {
+        //            e.printStackTrace();
+        //        }
+        //resetting the snake so next time drawSnake method runs. It shows the same animation.
+        Point p = snake.getMoves().peekLast();
+        snake.getMoves().clear();
+        snake.getMoves().add(p);
+
+        //change back to black if we want to draw more.
+        //        g.setColor(Color.BLACK);
     }
 
-    private void move2(char ch){
+    //adds point to the snake.
 
+    /**
+     * The move method. Uses a snakes controls to asses the direction of the snake
+     * @param ch
+     * @param snake
+     */
+    private void move(char ch, Snake snake){
 
-        Point head = snake.peekFirst();
+        Point head = snake.getMoves().peekFirst();
         Point newPoint = head;
 
         switch (ch) {
@@ -86,104 +226,38 @@ public class BackupReplaySnake extends Canvas implements Runnable{
                 newPoint = new Point(head.x + 1, head.y);
                 break;
         }
-        System.out.println(newPoint.toString());
-        snake.push(newPoint);
+        snake.getMoves().push(newPoint);
 
     }
 
-    private void move(char ch){
 
-            /*if (newPoint.x < 0 || newPoint.x > BOARD_WIDTH - 1){
+    @Override
+    public void actionPerformed(ActionEvent e) {
 
-                //OOB
-                checkScore();
-                hasWon = false;
-                isAtEndGame = true;
-                return;
-
-            }
-            else if (newPoint.y < 0 || newPoint.y > BOARD_HEIGHT - 1){
-
-                //OOB
-                hasWon = false;
-                isAtEndGame = true;
-                return;
-            }
-            else if (snake.contains(newPoint)){
-
-                //gonna have a bad time. cannibalism?!!!!
-                hasWon = false;
-                isAtEndGame = true;
-                return;
-            }
-            else if (snake.size() == (BOARD_HEIGHT * BOARD_WIDTH)){
-
-                hasWon = true;
-                isAtEndGame = true;
-                //filled out all fields
-                return;
-            }*/
-
-            //add head at first position. Push it into first position. Rest follows. Linkedlist ftw
-
-    }
-    private void drawSnake(Graphics g) {
-
-        g.setColor(Color.BLUE);
-
-
-        for (Point p : snake) {
-
-            g.fillRect(p.x * FIELD_WIDTH, p.y * FIELD_HEIGHT, FIELD_WIDTH, FIELD_HEIGHT);
-        }
-
-        g.setColor(Color.BLACK);
+        repaint();
     }
 
 
-    public void drawBoard(Graphics g){
+    /**
+     * Fills canvas with the board.
+     * Firstly with the complete board as a rectangle. Next, the lines horizontally and vertically
+     * @param g takes a graphics object
+     */
+    private void drawBoard(Graphics g){
 
         g.drawRect(0, 0, FIELD_WIDTH * BOARD_WIDTH, FIELD_HEIGHT * BOARD_HEIGHT);
 
 
+        //horizontal lines
         for (int x = FIELD_WIDTH; x < FIELD_WIDTH * BOARD_WIDTH ; x+= FIELD_WIDTH) {
 
             g.drawLine(x, 0, x, FIELD_HEIGHT * BOARD_HEIGHT);
         }
 
+        //vertical lines
         for (int y = FIELD_HEIGHT; y < FIELD_HEIGHT * BOARD_HEIGHT ; y+= FIELD_HEIGHT) {
 
             g.drawLine(0, y, FIELD_WIDTH * BOARD_WIDTH, y);
-        }
-    }
-
-
-    //Run metode kaldes kun én gang ved opstart, men paint kaldes først. Paint kaldes 10(+1) gang. Repaint kalder metoden.
-    @Override
-    public void run() {
-
-        System.out.println("inside run method");
-        moves = "dsdsdsdsds";
-
-        for (int i = 0; i < moves.length(); i++) {
-
-
-            //calls update and paint method
-            repaint();
-            //game continues loop to keep running logic
-            move2(moves.charAt(i));
-
-
-            try {
-                //access to current thread from run-method
-                Thread.currentThread();
-
-                //10 secs per frame
-                Thread.sleep(100);
-            }
-            catch (Exception e){
-                e.printStackTrace();
-            }
         }
     }
 }
